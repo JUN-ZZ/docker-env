@@ -1,0 +1,46 @@
+FROM ubuntu:latest
+
+LABEL maintainer="1596492090@qq.com"
+LABEL version="1.0"
+LABEL description="This ms refactoring Images"
+
+##默认的用户就是root
+ARG USER=root
+
+# python
+ENV PYTHON_HOME=/home/${USER}/miniconda3
+# java
+ENV JAVA_HOME=/home/${USER}/jdk1.8.0_171
+ENV JRE_HOME=${JAVA_HOME}/jre
+ENV CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib
+
+# PATH
+ENV PATH=.:${PYTHON_HOME}/bin:${JAVA_HOME}/bin:$PATH
+
+ENV TZ=Asia/Shanghai
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
+
+# 指定容器启动默认用户
+USER ${USER}
+# 容器默认工作目录
+WORKDIR /home/${USER}
+
+# Miniconda 准备
+ADD  jdk-8u171-linux-x64.tar.gz /home/${USER}/
+RUN apt update -y  &&  apt install curl -y
+RUN curl --retry-max-time 1800 --connect-timeout 1800 --retry 40 -L -C - https://repo.anaconda.com/miniconda/Miniconda3-py310_23.9.0-0-Linux-x86_64.sh  > /home/${USER}/Miniconda3-py310_23.9.0-0-Linux-x86_64.sh
+
+# 安装Miniconda
+RUN rm -rf /home/${USER}/miniconda3 &&  /bin/bash /home/${USER}/Miniconda3-py310_23.9.0-0-Linux-x86_64.sh -b -p /home/${USER}/miniconda3 \
+    && rm -rf /home/${USER}/Miniconda3-py310_23.9.0-0-Linux-x86_64.sh
+
+RUN pip --no-cache-dir install numba  pandas -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip --no-cache-dir install  llvmlite \
+    python-dateutil pytz \
+    -i https://mirrors.aliyun.com/pypi/simple/
+
+RUN pip install --no-cache-dir fastparquet -i  https://mirrors.aliyun.com/pypi/simple/
+
+# docker build --network host -t  ubuntu-py30-jdk8:0.0.1 -f dockerfile2bash3.10 .
